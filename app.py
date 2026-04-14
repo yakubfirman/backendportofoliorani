@@ -40,6 +40,9 @@ FRONTEND_ORIGINS = [
     'https://maharanirizka.vercel.app',
 ] + env_origins
 
+# Normalized set (strip trailing slash, lowercase) used for tolerant comparisons
+FRONTEND_ORIGINS_NORMALIZED = [o.rstrip('/').lower() for o in FRONTEND_ORIGINS if o]
+
 # Log configured frontend origins so it's visible in the PythonAnywhere error log
 # This helps confirm which origins the app will allow for CORS in production.
 try:
@@ -80,12 +83,13 @@ def _ensure_cors_headers(response):
         if not origin:
             return response
 
-        # only echo the origin if it's explicitly allowed
-        allowed = [o for o in FRONTEND_ORIGINS if o]
-        if origin in allowed:
+        # only echo the origin if it's explicitly allowed (tolerant match)
+        origin_norm = origin.rstrip('/').lower()
+        if origin_norm in FRONTEND_ORIGINS_NORMALIZED:
             # Don't overwrite existing headers set by Flask-CORS, but ensure
             # required headers exist for preflight responses.
             response.headers.setdefault('Access-Control-Allow-Origin', origin)
+            response.headers.setdefault('Access-Control-Allow-Credentials', 'true')
             # Vary: Origin so caches differentiate responses
             if 'Vary' in response.headers:
                 if 'Origin' not in response.headers['Vary']:
@@ -695,7 +699,12 @@ def send_message():
 @jwt_required()
 def get_messages():
     messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
-    return jsonify([m.to_dict() for m in messages]), 200
+    return jsonify([m.to_dict() for m in     $h = @{
+      "Origin"="https://maharanirizka.vercel.app"
+      "Access-Control-Request-Method"="GET"
+      "Access-Control-Request-Headers"="Authorization,Content-Type"
+    }
+    Invoke-WebRequest -Uri "https://apiportomaharani.pythonanywhere.com/api/about" -Method OPTIONS -Headers $hmessages]), 200
 
 
 @app.route('/api/messages/<int:msg_id>/read', methods=['PUT'])
