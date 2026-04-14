@@ -40,6 +40,15 @@ FRONTEND_ORIGINS = [
     'https://maharanirizka.vercel.app',
 ] + env_origins
 
+# Log configured frontend origins so it's visible in the PythonAnywhere error log
+# This helps confirm which origins the app will allow for CORS in production.
+try:
+    app.logger.info("FRONTEND_URL env var: %s", frontend_env)
+    app.logger.info("Resolved FRONTEND_ORIGINS: %s", FRONTEND_ORIGINS)
+except Exception:
+    # avoid crashing if logger isn't fully configured yet
+    pass
+
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 # Configure CORS explicitly for API routes so preflight requests include the
@@ -57,6 +66,41 @@ CORS(
 )
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+
+@app.after_request
+def _ensure_cors_headers(response):
+    """Fallback CORS headers: if the request has an Origin and it's allowed,
+    ensure the response (including preflight responses) contains the necessary
+    Access-Control-* headers. This is a safe non-wildcard fallback and only
+    echoes the origin when it's in the allowed list.
+    """
+    try:
+        origin = request.headers.get('Origin')
+        if not origin:
+            return response
+
+        # only echo the origin if it's explicitly allowed
+        allowed = [o for o in FRONTEND_ORIGINS if o]
+        if origin in allowed:
+            # Don't overwrite existing headers set by Flask-CORS, but ensure
+            # required headers exist for preflight responses.
+            response.headers.setdefault('Access-Control-Allow-Origin', origin)
+            # Vary: Origin so caches differentiate responses
+            if 'Vary' in response.headers:
+                if 'Origin' not in response.headers['Vary']:
+                    response.headers['Vary'] = response.headers['Vary'] + ', Origin'
+            else:
+                response.headers['Vary'] = 'Origin'
+            response.headers.setdefault('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+            response.headers.setdefault('Access-Control-Allow-Methods', 'GET,HEAD,POST,OPTIONS,PUT,PATCH,DELETE')
+            # For preflight requests, ensure 200 status
+            if request.method == 'OPTIONS':
+                response.status_code = 200
+    except Exception:
+        # never raise from here — logging already exists elsewhere
+        pass
+    return response
 
 
 # ─── Models ────────────────────────────────────────────────────────────────────
@@ -703,8 +747,8 @@ def init_db():
         db.create_all()
 
         if not AdminUser.query.first():
-            admin = AdminUser(username='admin')
-            admin.set_password('admin123')
+            admin = AdminUser(username='portorani')
+            admin.set_password('porto1122')
             db.session.add(admin)
 
         if not HeroSection.query.first():
