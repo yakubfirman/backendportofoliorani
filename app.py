@@ -698,13 +698,8 @@ def send_message():
 @app.route('/api/messages', methods=['GET'])
 @jwt_required()
 def get_messages():
-    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
-    return jsonify([m.to_dict() for m in     $h = @{
-      "Origin"="https://maharanirizka.vercel.app"
-      "Access-Control-Request-Method"="GET"
-      "Access-Control-Request-Headers"="Authorization,Content-Type"
-    }
-    Invoke-WebRequest -Uri "https://apiportomaharani.pythonanywhere.com/api/about" -Method OPTIONS -Headers $hmessages]), 200
+        messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+        return jsonify([m.to_dict() for m in messages]), 200
 
 
 @app.route('/api/messages/<int:msg_id>/read', methods=['PUT'])
