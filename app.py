@@ -42,7 +42,19 @@ FRONTEND_ORIGINS = [
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-CORS(app, origins=[o for o in FRONTEND_ORIGINS if o], supports_credentials=True)
+# Configure CORS explicitly for API routes so preflight requests include the
+# expected Access-Control headers (especially when `Authorization` header used).
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [o for o in FRONTEND_ORIGINS if o],
+            "methods": ["GET", "HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
+            "allow_headers": ["Content-Type", "Authorization"],
+        }
+    },
+    supports_credentials=True,
+)
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
