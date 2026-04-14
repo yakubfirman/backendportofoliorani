@@ -29,10 +29,16 @@ app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp', 'pdf'}
 
+# Allowed frontend origins for CORS. Set `FRONTEND_URL` env var in PythonAnywhere
+# to your frontend domain (can be comma-separated). We include localhost and
+# a sensible default for the deployed Vercel app so the site works out-of-the-box.
+frontend_env = os.environ.get('FRONTEND_URL', '')
+# Allow multiple comma-separated origins from the env var
+env_origins = [o.strip() for o in frontend_env.split(',') if o.strip()] if frontend_env else []
 FRONTEND_ORIGINS = [
     'http://localhost:3000',
-    os.environ.get('FRONTEND_URL', ''),
-]
+    'https://maharanirizka.vercel.app',
+] + env_origins
 
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
